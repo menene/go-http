@@ -1,9 +1,8 @@
-# 01 - Raw TCP HTTP Server
+# 02 - HTTP Manual Routing
 
-Esta rama representa el **primer paso** en la construcción progresiva del servidor.
+En esta etapa seguimos trabajando con **TCP puro**, sin usar `net/http`.
 
-En este punto NO usamos `net/http`.
-El objetivo es entender cómo funciona HTTP realmente sobre TCP.
+La diferencia con la rama anterior es que ahora comenzamos a entender y manipular la estructura real del protocolo HTTP.
 
 ---
 
@@ -11,51 +10,63 @@ El objetivo es entender cómo funciona HTTP realmente sobre TCP.
 
 Comprender:
 
-* Qué es un socket TCP
-* Cómo un servidor acepta conexiones
-* Cómo el navegador envía una petición HTTP
-* Cómo se construye manualmente una respuesta HTTP válida
-* La estructura real del protocolo HTTP
+* Qué contiene realmente la primera línea de un request HTTP
+* Qué es el método (`GET`, `POST`, etc.)
+* Qué es el path (`/`, `/about`)
+* Cómo funciona el routing internamente
+* Cómo devolver códigos de estado correctos (200, 404, 405)
 
-Aquí no hay frameworks.
-Aquí no hay abstracciones.
-Solo TCP y texto.
-
----
-
-## 🧠 Qué está pasando realmente
-
-El servidor:
-
-1. Escucha en el puerto 80 dentro del contenedor
-2. Acepta una conexión TCP
-3. Lee línea por línea la petición HTTP
-4. Detecta el fin de los headers (línea vacía)
-5. Escribe manualmente una respuesta HTTP
-6. Cierra la conexión
-
-Ejemplo simplificado de respuesta enviada:
-
-```
-HTTP/1.1 200 OK
-Content-Type: text/html
-Connection: close
-
-<html>
-  <body>
-    <h1>Hello from raw TCP</h1>
-  </body>
-</html>
-```
-
-Ese bloque de texto ES HTTP.
-No hay magia.
+Aquí todavía no hay abstracciones.
+Seguimos trabajando directamente sobre TCP.
 
 ---
 
-## 🐳 Ejecución con Docker
+## 🧠 Qué cambió respecto a 01
 
-El contenedor expone el puerto 80 internamente.
+Antes:
+
+* El servidor respondía siempre lo mismo.
+
+Ahora:
+
+* Leemos la primera línea del request
+* La dividimos en partes
+* Extraemos método y ruta
+* Decidimos qué respuesta enviar según la ruta
+
+Ejemplo real de request:
+
+```
+GET /about HTTP/1.1
+Host: localhost:8080
+User-Agent: ...
+```
+
+Estamos parseando manualmente:
+
+* `GET`
+* `/about`
+* `HTTP/1.1`
+
+---
+
+## 🧩 Routing manual
+
+El routing ahora es simplemente lógica condicional:
+
+* Si la ruta es `/` → devolver Home
+* Si la ruta es `/about` → devolver About
+* Si no existe → devolver 404
+* Si el método no es GET → devolver 405
+
+Nada mágico.
+Así funcionan los frameworks internamente.
+
+---
+
+## 🐳 Ejecución
+
+El servidor escucha en el puerto 80 dentro del contenedor.
 
 En `docker-compose.yml` se mapea:
 
@@ -64,50 +75,28 @@ ports:
   - "8080:80"
 ```
 
-Esto significa:
+Acceder desde el navegador:
 
-* Tu máquina → [http://localhost:8080](http://localhost:8080)
-* Contenedor → puerto 80
+```
+http://localhost:8080/
+http://localhost:8080/about
+http://localhost:8080/no-existe
+```
 
----
-
-## ▶️ Cómo ejecutar
-
-Desde el directorio del proyecto:
+También puedes probar:
 
 ```bash
-docker compose up --build
+curl -X POST http://localhost:8080/
 ```
 
-Luego visitar:
-
-```
-http://localhost:8080
-```
-
----
-
-## 🔎 Qué debes observar
-
-En la terminal verás algo como:
-
-```
-Received: GET / HTTP/1.1
-Received: Host: localhost:8080
-Received: User-Agent: ...
-```
-
-Eso es el navegador enviando texto plano.
-
-HTTP es texto sobre TCP.
+Deberías recibir un `405 Method Not Allowed`.
 
 ---
 
 ## 📌 Limitaciones de esta etapa
 
-* No hay routing real
-* No hay manejo de métodos (GET/POST)
-* No hay parsing formal
-* No hay manejo de errores
-* No hay soporte de keep-alive
-* No hay templates
+* Solo soporta método GET
+* No parsea el body
+* No procesa headers avanzados
+* No soporta keep-alive
+* No hay manejo robusto de errores
