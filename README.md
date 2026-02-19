@@ -1,8 +1,8 @@
-# 03 - net/http Basics
+# 04 - Serve HTML Files
 
-En esta etapa dejamos de trabajar directamente con TCP y comenzamos a usar la librería estándar de Go: `net/http`.
+En esta etapa dejamos de generar HTML directamente desde el código Go y comenzamos a servir archivos HTML reales desde el sistema de archivos.
 
-El objetivo es entender qué problemas resuelve esta abstracción y cuánto código desaparece cuando la utilizamos.
+Además, introducimos el manejo de archivos estáticos como CSS e imágenes.
 
 ---
 
@@ -10,59 +10,107 @@ El objetivo es entender qué problemas resuelve esta abstracción y cuánto cód
 
 Comprender:
 
-* Qué es `net/http`
-* Cómo simplifica la creación de servidores HTTP
-* Cómo funciona el routing básico con `HandleFunc`
-* Cómo manejar métodos HTTP correctamente
-* Cómo enviar respuestas y códigos de estado sin construir manualmente el protocolo
+* Cómo servir archivos HTML usando `http.ServeFile`
+* Cómo servir archivos estáticos con `http.FileServer`
+* Qué es `StripPrefix` y por qué es necesario
+* Cómo organizar un proyecto web de manera más realista
+* Separación básica entre backend y frontend
 
 ---
 
-## 🧠 Qué cambia respecto a la rama anterior
+## 📁 Nueva estructura del proyecto
 
-Antes (02-http-manual-routing):
+```
+.
+├── main.go
+├── src/
+│   ├── index.html
+│   ├── about.html
+│   ├── css/
+│   │   └── styles.css
+│   └── assets/
+│       └── gopher.png
+├── Dockerfile
+└── docker-compose.yml
+```
 
-* Parseábamos manualmente la primera línea del request
-* Extraíamos método y ruta
-* Construíamos manualmente la respuesta HTTP
-* Escribíamos headers y status line a mano
+Ahora el HTML ya no está embebido en el código Go.
+
+---
+
+## 🧠 Qué cambió respecto a la rama anterior
+
+Antes:
+
+* Las respuestas HTML se generaban con `fmt.Fprint`
+* Todo el contenido estaba dentro del archivo `main.go`
 
 Ahora:
 
-* `net/http` parsea automáticamente el request
-* El routing se define con `http.HandleFunc`
-* Los códigos de estado se manejan con `http.Error`
-* No escribimos manualmente la estructura HTTP
+* Usamos `http.ServeFile` para enviar archivos HTML
+* Usamos `http.FileServer` para servir directorios estáticos
+* El CSS y las imágenes viven en carpetas separadas
 
-Gran parte de la complejidad desaparece.
+El servidor ahora se comporta más como un servidor web real.
 
 ---
 
-## 🧩 Routing con net/http
+## 🧩 Servir archivos específicos
 
-El routing ahora se define así:
-
-```go
-http.HandleFunc("/", homeHandler)
-http.HandleFunc("/about", aboutHandler)
-```
-
-Cada función recibe:
+Para servir un archivo HTML:
 
 ```go
-func(w http.ResponseWriter, r *http.Request)
+http.ServeFile(w, r, "./src/index.html")
 ```
 
-Donde:
+Esto envía el archivo directamente al cliente.
 
-* `r` contiene toda la información del request
-* `w` permite escribir la respuesta
+---
+
+## 📦 Servir archivos estáticos
+
+Para servir CSS e imágenes usamos `FileServer`:
+
+```go
+css := http.FileServer(http.Dir("./src/css"))
+http.Handle("/css/", http.StripPrefix("/css/", css))
+```
+
+Lo mismo para `/assets/`.
+
+### ¿Por qué usamos `StripPrefix`?
+
+Cuando el navegador solicita:
+
+```
+/assets/gopher.png
+```
+
+Si no eliminamos el prefijo, Go intentaría buscar:
+
+```
+./src/assets/assets/gopher.png
+```
+
+Con `StripPrefix` logramos que el path interno coincida correctamente con el sistema de archivos.
+
+---
+
+## 🖼 Carga de imágenes
+
+En `about.html` ahora podemos usar:
+
+```html
+<img src="/assets/gopher.png" alt="Gopher">
+```
+
+El servidor entrega la imagen desde el directorio `src/assets`.
 
 ---
 
 ## 🐳 Ejecución
 
-El servidor escucha en el puerto 80 dentro del contenedor.
+El servidor sigue escuchando en el puerto 80 dentro del contenedor.
 
 En `docker-compose.yml` se mapea:
 
@@ -78,25 +126,17 @@ http://localhost:8080/
 http://localhost:8080/about
 ```
 
-También puedes probar métodos no permitidos:
-
-```bash
-curl -X POST http://localhost:8080/
-```
-
-Deberías recibir un `405 Method Not Allowed`.
-
 ---
 
 ## 📌 Qué estamos aprendiendo realmente
 
-`net/http` no es un framework externo.
+En esta etapa introducimos:
 
-Es la implementación oficial y robusta del protocolo HTTP en Go.
+* Separación de responsabilidades
+* Organización de archivos
+* Manejo básico de recursos estáticos
 
-Nos permite:
+Este es el paso previo antes de introducir plantillas dinámicas.
 
-* Evitar errores al construir respuestas
-* Manejar correctamente headers
-* Tener soporte para keep-alive
-* Tener un servidor concurrente listo para producción
+Ahora el servidor ya no construye HTML.
+Solo lo entrega.

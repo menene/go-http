@@ -8,6 +8,14 @@ import (
 func main() {
 	fmt.Println("Server running on :80")
 
+	// Static files
+	css := http.FileServer(http.Dir("./src/css"))
+	http.Handle("/css/", http.StripPrefix("/css/", css))
+
+	assets := http.FileServer(http.Dir("./src/assets"))
+	http.Handle("/assets/", http.StripPrefix("/assets/", assets))
+
+	// Routes
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/about", aboutHandler)
 
@@ -23,7 +31,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, "<h1>Home</h1><p>Welcome to branch 03</p>")
+	http.ServeFile(w, r, "./src/index.html")
 }
 
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
@@ -32,5 +40,5 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, "<h1>About</h1><p>Now using net/http</p>")
+	http.ServeFile(w, r, "./src/about.html")
 }
