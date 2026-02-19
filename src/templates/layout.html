@@ -2,13 +2,19 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Home</title>
+    <title>Go Server</title>
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-    <h1>Home</h1>
-    <p>Now serving real HTML files.</p>
 
-    <a href="/about">Go to About</a>
+<nav>
+    <a href="/">Home</a> |
+    <a href="/about">About</a>
+</nav>
+
+<hr>
+
+{{ template "content" . }}
+
 </body>
 </html>

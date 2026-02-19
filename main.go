@@ -1,28 +1,26 @@
 package main
 
 import (
-	"fmt"
+	"html/template"
+	"log"
 	"net/http"
 )
 
 func main() {
-	fmt.Println("Server running on :80")
-
-	// Static files
+	// static files
 	css := http.FileServer(http.Dir("./src/css"))
 	http.Handle("/css/", http.StripPrefix("/css/", css))
 
+	// assets
 	assets := http.FileServer(http.Dir("./src/assets"))
 	http.Handle("/assets/", http.StripPrefix("/assets/", assets))
 
-	// Routes
+	// routes
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/about", aboutHandler)
 
-	err := http.ListenAndServe(":80", nil)
-	if err != nil {
-		panic(err)
-	}
+	log.Println("Server running on :80")
+	log.Fatal(http.ListenAndServe(":80", nil))
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +29,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.ServeFile(w, r, "./src/index.html")
+	renderTemplate(w, "index.html")
 }
 
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
@@ -40,5 +38,21 @@ func aboutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.ServeFile(w, r, "./src/about.html")
+	renderTemplate(w, "about.html")
+}
+
+func renderTemplate(w http.ResponseWriter, page string) {
+	tmpl, err := template.ParseFiles(
+		"./src/templates/layout.html",
+		"./src/templates/"+page,
+	)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.Execute(w, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

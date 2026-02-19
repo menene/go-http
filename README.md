@@ -1,8 +1,10 @@
-# 04 - Serve HTML Files
+# 05 - Templates
 
-En esta etapa dejamos de generar HTML directamente desde el código Go y comenzamos a servir archivos HTML reales desde el sistema de archivos.
+En esta etapa dejamos de servir archivos HTML estáticos directamente y comenzamos a utilizar **plantillas (templates)** con `html/template`.
 
-Además, introducimos el manejo de archivos estáticos como CSS e imágenes.
+El objetivo no es agregar lógica dinámica todavía.
+
+El objetivo es entender cómo funciona el renderizado del lado del servidor y cómo reutilizar una estructura común (layout).
 
 ---
 
@@ -10,31 +12,33 @@ Además, introducimos el manejo de archivos estáticos como CSS e imágenes.
 
 Comprender:
 
-* Cómo servir archivos HTML usando `http.ServeFile`
-* Cómo servir archivos estáticos con `http.FileServer`
-* Qué es `StripPrefix` y por qué es necesario
-* Cómo organizar un proyecto web de manera más realista
-* Separación básica entre backend y frontend
+* Qué es `html/template`
+* Cómo separar layout y contenido
+* Cómo renderizar vistas desde el backend
+* Cómo reutilizar estructura HTML sin duplicación
+* Cómo funciona la composición de templates en Go
 
 ---
 
-## 📁 Nueva estructura del proyecto
+## 📁 Estructura del proyecto
 
 ```
 .
 ├── main.go
 ├── src/
-│   ├── index.html
-│   ├── about.html
 │   ├── css/
 │   │   └── styles.css
-│   └── assets/
-│       └── gopher.png
+│   ├── assets/
+│   │   └── gopher.png
+│   └── templates/
+│       ├── layout.html
+│       ├── index.html
+│       └── about.html
 ├── Dockerfile
 └── docker-compose.yml
 ```
 
-Ahora el HTML ya no está embebido en el código Go.
+Ahora el HTML vive dentro de la carpeta `templates`.
 
 ---
 
@@ -42,69 +46,65 @@ Ahora el HTML ya no está embebido en el código Go.
 
 Antes:
 
-* Las respuestas HTML se generaban con `fmt.Fprint`
-* Todo el contenido estaba dentro del archivo `main.go`
+* Servíamos archivos HTML directamente con `http.ServeFile`
+* El servidor solo entregaba archivos
 
 Ahora:
 
-* Usamos `http.ServeFile` para enviar archivos HTML
-* Usamos `http.FileServer` para servir directorios estáticos
-* El CSS y las imágenes viven en carpetas separadas
+* El servidor **renderiza** vistas usando plantillas
+* Existe un `layout.html` compartido
+* Cada página define su bloque de contenido
 
-El servidor ahora se comporta más como un servidor web real.
+El backend ya no solo entrega archivos.
+Ahora genera la vista final.
 
 ---
 
-## 🧩 Servir archivos específicos
+## 🧩 Cómo funciona el renderizado
 
-Para servir un archivo HTML:
+Para cada request:
+
+1. Se parsea `layout.html`
+2. Se parsea el template específico de la página
+3. El layout incluye el bloque `content`
+4. Se ejecuta el template resultante
+
+Ejemplo simplificado en Go:
 
 ```go
-http.ServeFile(w, r, "./src/index.html")
+tmpl, _ := template.ParseFiles(
+    "layout.html",
+    "index.html",
+)
+
+tmpl.Execute(w, nil)
 ```
 
-Esto envía el archivo directamente al cliente.
-
----
-
-## 📦 Servir archivos estáticos
-
-Para servir CSS e imágenes usamos `FileServer`:
-
-```go
-css := http.FileServer(http.Dir("./src/css"))
-http.Handle("/css/", http.StripPrefix("/css/", css))
-```
-
-Lo mismo para `/assets/`.
-
-### ¿Por qué usamos `StripPrefix`?
-
-Cuando el navegador solicita:
-
-```
-/assets/gopher.png
-```
-
-Si no eliminamos el prefijo, Go intentaría buscar:
-
-```
-./src/assets/assets/gopher.png
-```
-
-Con `StripPrefix` logramos que el path interno coincida correctamente con el sistema de archivos.
-
----
-
-## 🖼 Carga de imágenes
-
-En `about.html` ahora podemos usar:
+El layout define dónde se inserta el contenido:
 
 ```html
-<img src="/assets/gopher.png" alt="Gopher">
+{{ template "content" . }}
 ```
 
-El servidor entrega la imagen desde el directorio `src/assets`.
+Y cada página define ese bloque:
+
+```html
+{{ define "content" }}
+<h1>Home</h1>
+{{ end }}
+```
+
+---
+
+## 🔐 ¿Por qué usamos `html/template`?
+
+Porque:
+
+* Escapa automáticamente HTML
+* Previene vulnerabilidades XSS
+* Está diseñada para renderizar contenido web seguro
+
+No usamos `text/template` porque no tiene estas protecciones.
 
 ---
 
@@ -132,11 +132,9 @@ http://localhost:8080/about
 
 En esta etapa introducimos:
 
-* Separación de responsabilidades
-* Organización de archivos
-* Manejo básico de recursos estáticos
+* Renderizado del lado del servidor
+* Reutilización de layout
+* Organización de vistas
+* Separación estructural entre contenido y estructura
 
-Este es el paso previo antes de introducir plantillas dinámicas.
-
-Ahora el servidor ya no construye HTML.
-Solo lo entrega.
+Este es el punto donde el backend deja de ser solo un servidor de archivos y se convierte en un generador de vistas.
