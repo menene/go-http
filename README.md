@@ -1,8 +1,8 @@
-# 02 - HTTP Manual Routing
+# 03 - net/http Basics
 
-En esta etapa seguimos trabajando con **TCP puro**, sin usar `net/http`.
+En esta etapa dejamos de trabajar directamente con TCP y comenzamos a usar la librería estándar de Go: `net/http`.
 
-La diferencia con la rama anterior es que ahora comenzamos a entender y manipular la estructura real del protocolo HTTP.
+El objetivo es entender qué problemas resuelve esta abstracción y cuánto código desaparece cuando la utilizamos.
 
 ---
 
@@ -10,57 +10,53 @@ La diferencia con la rama anterior es que ahora comenzamos a entender y manipula
 
 Comprender:
 
-* Qué contiene realmente la primera línea de un request HTTP
-* Qué es el método (`GET`, `POST`, etc.)
-* Qué es el path (`/`, `/about`)
-* Cómo funciona el routing internamente
-* Cómo devolver códigos de estado correctos (200, 404, 405)
-
-Aquí todavía no hay abstracciones.
-Seguimos trabajando directamente sobre TCP.
+* Qué es `net/http`
+* Cómo simplifica la creación de servidores HTTP
+* Cómo funciona el routing básico con `HandleFunc`
+* Cómo manejar métodos HTTP correctamente
+* Cómo enviar respuestas y códigos de estado sin construir manualmente el protocolo
 
 ---
 
-## 🧠 Qué cambió respecto a 01
+## 🧠 Qué cambia respecto a la rama anterior
 
-Antes:
+Antes (02-http-manual-routing):
 
-* El servidor respondía siempre lo mismo.
+* Parseábamos manualmente la primera línea del request
+* Extraíamos método y ruta
+* Construíamos manualmente la respuesta HTTP
+* Escribíamos headers y status line a mano
 
 Ahora:
 
-* Leemos la primera línea del request
-* La dividimos en partes
-* Extraemos método y ruta
-* Decidimos qué respuesta enviar según la ruta
+* `net/http` parsea automáticamente el request
+* El routing se define con `http.HandleFunc`
+* Los códigos de estado se manejan con `http.Error`
+* No escribimos manualmente la estructura HTTP
 
-Ejemplo real de request:
-
-```
-GET /about HTTP/1.1
-Host: localhost:8080
-User-Agent: ...
-```
-
-Estamos parseando manualmente:
-
-* `GET`
-* `/about`
-* `HTTP/1.1`
+Gran parte de la complejidad desaparece.
 
 ---
 
-## 🧩 Routing manual
+## 🧩 Routing con net/http
 
-El routing ahora es simplemente lógica condicional:
+El routing ahora se define así:
 
-* Si la ruta es `/` → devolver Home
-* Si la ruta es `/about` → devolver About
-* Si no existe → devolver 404
-* Si el método no es GET → devolver 405
+```go
+http.HandleFunc("/", homeHandler)
+http.HandleFunc("/about", aboutHandler)
+```
 
-Nada mágico.
-Así funcionan los frameworks internamente.
+Cada función recibe:
+
+```go
+func(w http.ResponseWriter, r *http.Request)
+```
+
+Donde:
+
+* `r` contiene toda la información del request
+* `w` permite escribir la respuesta
 
 ---
 
@@ -80,10 +76,9 @@ Acceder desde el navegador:
 ```
 http://localhost:8080/
 http://localhost:8080/about
-http://localhost:8080/no-existe
 ```
 
-También puedes probar:
+También puedes probar métodos no permitidos:
 
 ```bash
 curl -X POST http://localhost:8080/
@@ -93,10 +88,15 @@ Deberías recibir un `405 Method Not Allowed`.
 
 ---
 
-## 📌 Limitaciones de esta etapa
+## 📌 Qué estamos aprendiendo realmente
 
-* Solo soporta método GET
-* No parsea el body
-* No procesa headers avanzados
-* No soporta keep-alive
-* No hay manejo robusto de errores
+`net/http` no es un framework externo.
+
+Es la implementación oficial y robusta del protocolo HTTP en Go.
+
+Nos permite:
+
+* Evitar errores al construir respuestas
+* Manejar correctamente headers
+* Tener soporte para keep-alive
+* Tener un servidor concurrente listo para producción
