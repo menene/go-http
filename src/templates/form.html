@@ -1,0 +1,15 @@
+{{ define "content" }}
+<h1>Simple Form</h1>
+
+<form method="POST" action="/form">
+    <label for="name">Your Name:</label>
+    <input type="text" name="name" id="name">
+    <button type="submit">Submit</button>
+</form>
+
+{{ if . }}
+<hr>
+<p>Hello, {{ .Name }}!</p>
+{{ end }}
+
+{{ end }}

@@ -1,10 +1,10 @@
-# 05 - Templates
+# 06 - POSTS
 
-En esta etapa dejamos de servir archivos HTML estáticos directamente y comenzamos a utilizar **plantillas (templates)** con `html/template`.
+En esta etapa el servidor deja de ser únicamente un generador de vistas y comienza a **recibir información desde el cliente**.
 
-El objetivo no es agregar lógica dinámica todavía.
+Introducimos formularios HTML y el método `POST`, permitiendo interacción real entre navegador y servidor.
 
-El objetivo es entender cómo funciona el renderizado del lado del servidor y cómo reutilizar una estructura común (layout).
+Este es el punto donde el backend pasa de ser estático a procesar datos.
 
 ---
 
@@ -12,11 +12,12 @@ El objetivo es entender cómo funciona el renderizado del lado del servidor y c�
 
 Comprender:
 
-* Qué es `html/template`
-* Cómo separar layout y contenido
-* Cómo renderizar vistas desde el backend
-* Cómo reutilizar estructura HTML sin duplicación
-* Cómo funciona la composición de templates en Go
+* Cómo funciona un formulario HTML
+* Qué diferencia hay entre `GET` y `POST`
+* Qué ocurre cuando el navegador envía datos al servidor
+* Cómo usar `r.ParseForm()`
+* Cómo usar `r.FormValue()`
+* Cómo renderizar una respuesta basada en datos enviados por el usuario
 
 ---
 
@@ -33,12 +34,13 @@ Comprender:
 │   └── templates/
 │       ├── layout.html
 │       ├── index.html
-│       └── about.html
+│       ├── about.html
+│       └── form.html
 ├── Dockerfile
 └── docker-compose.yml
 ```
 
-Ahora el HTML vive dentro de la carpeta `templates`.
+Se agrega un nuevo template: `form.html`.
 
 ---
 
@@ -46,65 +48,71 @@ Ahora el HTML vive dentro de la carpeta `templates`.
 
 Antes:
 
-* Servíamos archivos HTML directamente con `http.ServeFile`
-* El servidor solo entregaba archivos
+* El servidor solo renderizaba vistas
+* No recibía datos del usuario
 
 Ahora:
 
-* El servidor **renderiza** vistas usando plantillas
-* Existe un `layout.html` compartido
-* Cada página define su bloque de contenido
+* Existe un formulario HTML
+* El navegador envía una petición `POST`
+* El servidor procesa datos enviados en el body
+* El contenido renderizado depende del input del usuario
 
-El backend ya no solo entrega archivos.
-Ahora genera la vista final.
+El flujo ahora es bidireccional:
+
+Cliente → Servidor → Respuesta dinámica
 
 ---
 
-## 🧩 Cómo funciona el renderizado
+## 🧩 Flujo completo
 
-Para cada request:
-
-1. Se parsea `layout.html`
-2. Se parsea el template específico de la página
-3. El layout incluye el bloque `content`
-4. Se ejecuta el template resultante
-
-Ejemplo simplificado en Go:
+1. El usuario visita `/form`
+2. El servidor responde con el formulario
+3. El usuario envía el formulario
+4. El navegador envía una petición `POST` a `/form`
+5. El servidor ejecuta:
 
 ```go
-tmpl, _ := template.ParseFiles(
-    "layout.html",
-    "index.html",
-)
-
-tmpl.Execute(w, nil)
+r.ParseForm()
+name := r.FormValue("name")
 ```
 
-El layout define dónde se inserta el contenido:
-
-```html
-{{ template "content" . }}
-```
-
-Y cada página define ese bloque:
-
-```html
-{{ define "content" }}
-<h1>Home</h1>
-{{ end }}
-```
+6. El servidor vuelve a renderizar la vista mostrando el resultado
 
 ---
 
-## 🔐 ¿Por qué usamos `html/template`?
+## 🔎 Manejo de métodos HTTP
 
-Porque:
+En esta rama se introduce control explícito por método:
 
-* Escapa automáticamente HTML
-* Previene vulnerabilidades XSS
-* Está diseñada para renderizar contenido web seguro
+```go
+switch r.Method {
+case http.MethodGet:
+case http.MethodPost:
+default:
+}
+```
 
-No usamos `text/template` porque no tiene estas protecciones.
+Esto permite definir comportamientos distintos según el tipo de request.
+
+---
+
+## 🧠 Qué hace `ParseForm()`
+
+`r.ParseForm()` analiza:
+
+* Parámetros en la URL
+* Datos enviados en el body (formularios POST)
+
+Después de ejecutarlo, los valores quedan disponibles para ser leídos.
+
+---
+
+## 🧠 Qué hace `FormValue()`
+
+`r.FormValue("name")` devuelve el primer valor asociado a la clave indicada.
+
+Es una forma conveniente de acceder a datos del formulario.
 
 ---
 
@@ -122,8 +130,7 @@ ports:
 Acceder desde el navegador:
 
 ```
-http://localhost:8080/
-http://localhost:8080/about
+http://localhost:8080/form
 ```
 
 ---
@@ -132,9 +139,9 @@ http://localhost:8080/about
 
 En esta etapa introducimos:
 
-* Renderizado del lado del servidor
-* Reutilización de layout
-* Organización de vistas
-* Separación estructural entre contenido y estructura
+* Lectura del body de una petición HTTP
+* Manejo de métodos distintos (GET vs POST)
+* Interacción real entre cliente y servidor
+* Generación de vistas basadas en datos enviados por el usuario
 
-Este es el punto donde el backend deja de ser solo un servidor de archivos y se convierte en un generador de vistas.
+Este es el momento donde el backend comienza a procesar información, no solo a servir contenido.
