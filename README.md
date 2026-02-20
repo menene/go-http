@@ -57,3 +57,9 @@ Se introduce la librería estándar `net/http`, eliminando el manejo manual del 
 
 **04-serve-html-files**
 El servidor comienza a servir archivos HTML reales, junto con recursos estáticos como CSS e imágenes, organizando el proyecto de forma más cercana a un entorno real.
+
+**05-templates**
+Se introduce html/template, permitiendo generar vistas desde el servidor y reutilizar un layout común para evitar duplicación de HTML.
+
+**06-posts**
+Se incorporan formularios HTML y el método POST, permitiendo que el servidor reciba y procese datos enviados por el cliente.
