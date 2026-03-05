@@ -1,8 +1,8 @@
-# 08 - File DB
+# 09 - Query Parameters
 
-En esta etapa la API deja de devolver datos estáticos definidos en el código y comienza a leer información desde un archivo JSON.
+En esta etapa la API incorpora soporte para parámetros en la URL, permitiendo filtrar resultados utilizando query parameters.
 
-Simulamos una base de datos utilizando un archivo local, introduciendo una capa de datos separada de la lógica HTTP.
+Se mantiene el modelo basado en archivo JSON como fuente de datos, pero ahora el comportamiento del endpoint cambia según los parámetros recibidos.
 
 ---
 
@@ -10,11 +10,11 @@ Simulamos una base de datos utilizando un archivo local, introduciendo una capa 
 
 Comprender:
 
-* Cómo leer archivos en Go usando `os.ReadFile`
-* Cómo deserializar JSON con `json.Unmarshal`
-* Cómo almacenar datos en memoria
-* Cómo separar la capa de datos de la capa HTTP
-* Cómo estructurar una API respaldada por datos persistentes
+* Qué son los query parameters
+* Cómo acceder a ellos con `r.URL.Query()`
+* Cómo convertir valores de string a otros tipos (`strconv.Atoi`)
+* Cómo validar input del usuario
+* Cómo devolver diferentes respuestas según parámetros recibidos
 
 ---
 
@@ -29,7 +29,7 @@ Comprender:
 └── docker-compose.yml
 ```
 
-El archivo `teams.json` actúa como una base de datos simple.
+La estructura no cambia respecto a la rama anterior.
 
 ---
 
@@ -37,52 +37,48 @@ El archivo `teams.json` actúa como una base de datos simple.
 
 Antes:
 
-* Los datos se definían directamente en el código
-* Las respuestas eran completamente estáticas
+* `GET /api/teams` devolvía siempre todos los equipos
 
 Ahora:
 
-* Los datos se cargan desde un archivo externo
-* El servidor mantiene los datos en memoria
-* La API responde usando información leída desde disco
+* `GET /api/teams` devuelve todos los equipos
+* `GET /api/teams?id=1` devuelve un equipo específico
 
-Esto introduce una separación clara entre datos y transporte.
-
----
-
-## 🧩 Flujo de datos
-
-1. El servidor arranca
-2. Se ejecuta `loadTeams()`
-3. Se lee el archivo `data/teams.json`
-4. Se convierte el JSON en structs de Go
-5. Los endpoints devuelven esos datos
+El mismo endpoint ahora tiene comportamiento condicional basado en parámetros.
 
 ---
 
-## 🔎 Endpoint principal
+## 🧩 Ejemplos de uso
+
+Obtener todos los equipos:
 
 ```
 GET /api/teams
 ```
 
-Respuesta:
+Obtener un equipo específico:
 
-```json
-[
-  { "id": 1, "name": "Barcelona" },
-  { "id": 2, "name": "Atlético Madrid" }
-]
 ```
+GET /api/teams?id=1
+```
+
+Si el parámetro es inválido:
+
+* Se devuelve `400 Bad Request`
+
+Si el equipo no existe:
+
+* Se devuelve `404 Not Found`
 
 ---
 
-## 🧠 Conceptos introducidos
+## 🔎 Conceptos introducidos
 
-* `os.ReadFile` para leer archivos
-* `json.Unmarshal` para convertir JSON en structs
-* Uso de slices como almacenamiento en memoria
-* Inicialización de datos al iniciar el servidor
+* `r.URL.Query()` para leer parámetros de la URL
+* Uso de `query.Get("id")`
+* Conversión de tipos con `strconv.Atoi`
+* Validación de parámetros
+* Respuestas condicionales según input
 
 ---
 
@@ -102,6 +98,7 @@ Probar con:
 ```bash
 curl http://localhost:8080/api/ping
 curl http://localhost:8080/api/teams
+curl http://localhost:8080/api/teams?id=1
 ```
 
 ---
@@ -110,8 +107,9 @@ curl http://localhost:8080/api/teams
 
 En esta etapa entendemos que:
 
-* Una API puede estar respaldada por datos externos
-* No siempre se necesita una base de datos real para modelar persistencia
-* La separación entre capa de datos y capa HTTP es fundamental
+* Los endpoints pueden cambiar su comportamiento según parámetros
+* Todos los parámetros llegan como strings
+* Es responsabilidad del backend validar y convertir los datos
 
-Este es el paso previo antes de introducir filtrado, parámetros y modelado más avanzado de recursos.
+Este es el paso previo antes de modelar recursos utilizando path parameters y construir una API REST más formal.
+

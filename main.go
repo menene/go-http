@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 type Team struct {
@@ -24,7 +25,7 @@ func main() {
 	http.HandleFunc("/api/ping", pingHandler)
 	http.HandleFunc("/api/teams", teamsHandler)
 
-	log.Println("File DB API running on :80")
+	log.Println("Query Params API running on :80")
 	log.Fatal(http.ListenAndServe(":80", nil))
 }
 
@@ -54,7 +55,28 @@ func teamsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, teams)
+	query := r.URL.Query()
+	idParam := query.Get("id")
+
+	if idParam == "" {
+		writeJSON(w, http.StatusOK, teams)
+		return
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		http.Error(w, "Invalid id parameter", http.StatusBadRequest)
+		return
+	}
+
+	for _, team := range teams {
+		if team.ID == id {
+			writeJSON(w, http.StatusOK, team)
+			return
+		}
+	}
+
+	http.Error(w, "Team not found", http.StatusNotFound)
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
