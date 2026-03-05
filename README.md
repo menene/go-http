@@ -101,9 +101,3 @@ En esta etapa entendemos que:
 * Una API es simplemente un conjunto de endpoints HTTP
 * JSON es solo un formato de serialización
 * El backend puede existir sin interfaz gráfica
-
-Este es el paso previo antes de modelar recursos y construir una API REST completa.
-
----
-
-Autor: Curso Backend con Go
