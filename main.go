@@ -1,75 +1,54 @@
 package main
 
 import (
-	"html/template"
+	"encoding/json"
 	"log"
 	"net/http"
 )
 
+type Message struct {
+	Message string `json:"message"`
+}
+
+type Health struct {
+	Status string `json:"status"`
+}
+
 func main() {
-	// static files
-	css := http.FileServer(http.Dir("./src/css"))
-	http.Handle("/css/", http.StripPrefix("/css/", css))
+	http.HandleFunc("/api/hello", helloHandler)
+	http.HandleFunc("/api/health", healthHandler)
 
-	// assets
-	assets := http.FileServer(http.Dir("./src/assets"))
-	http.Handle("/assets/", http.StripPrefix("/assets/", assets))
-
-	// routes
-	http.HandleFunc("/", homeHandler)
-	http.HandleFunc("/about", aboutHandler)
-	http.HandleFunc("/form", formHandler)
-
-	log.Println("Server running on :80")
+	log.Println("JSON API running on :80")
 	log.Fatal(http.ListenAndServe(":80", nil))
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "index.html", nil)
-}
-
-func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "about.html", nil)
-}
-
-func formHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-
-	case http.MethodGet:
-		renderTemplate(w, "form.html", nil)
-
-	case http.MethodPost:
-		err := r.ParseForm()
-		if err != nil {
-			http.Error(w, "Bad Request", http.StatusBadRequest)
-			return
-		}
-
-		name := r.FormValue("name")
-
-		data := map[string]string{
-			"Name": name,
-		}
-
-		renderTemplate(w, "form.html", data)
-
-	default:
+func helloHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func renderTemplate(w http.ResponseWriter, page string, data interface{}) {
-	tmpl, err := template.ParseFiles(
-		"./src/templates/layout.html",
-		"./src/templates/"+page,
-	)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = tmpl.Execute(w, data)
+	response := Message{
+		Message: "Hello from pure JSON API",
+	}
+
+	writeJSON(w, http.StatusOK, response)
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	response := Health{
+		Status: "ok",
+	}
+
+	writeJSON(w, http.StatusOK, response)
+}
+
+func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	err := json.NewEncoder(w).Encode(payload)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }

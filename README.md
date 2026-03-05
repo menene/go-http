@@ -1,10 +1,10 @@
-# 06 - POSTS
+# 07 - JSON API
 
-En esta etapa el servidor deja de ser únicamente un generador de vistas y comienza a **recibir información desde el cliente**.
+En esta etapa el servidor deja completamente de renderizar HTML y pasa a ser una **API pura que devuelve JSON**.
 
-Introducimos formularios HTML y el método `POST`, permitiendo interacción real entre navegador y servidor.
+Se elimina cualquier rastro de vistas, templates o archivos estáticos.
 
-Este es el punto donde el backend pasa de ser estático a procesar datos.
+El backend ahora actúa como un servicio que expone datos a través de endpoints HTTP.
 
 ---
 
@@ -12,12 +12,11 @@ Este es el punto donde el backend pasa de ser estático a procesar datos.
 
 Comprender:
 
-* Cómo funciona un formulario HTML
-* Qué diferencia hay entre `GET` y `POST`
-* Qué ocurre cuando el navegador envía datos al servidor
-* Cómo usar `r.ParseForm()`
-* Cómo usar `r.FormValue()`
-* Cómo renderizar una respuesta basada en datos enviados por el usuario
+* Que un backend no necesariamente devuelve HTML
+* Que HTTP es solo el medio de transporte
+* Cómo devolver datos estructurados en formato JSON
+* Cómo usar el paquete estándar `encoding/json`
+* Cómo establecer correctamente headers y códigos de estado
 
 ---
 
@@ -26,21 +25,11 @@ Comprender:
 ```
 .
 ├── main.go
-├── src/
-│   ├── css/
-│   │   └── styles.css
-│   ├── assets/
-│   │   └── gopher.png
-│   └── templates/
-│       ├── layout.html
-│       ├── index.html
-│       ├── about.html
-│       └── form.html
 ├── Dockerfile
 └── docker-compose.yml
 ```
 
-Se agrega un nuevo template: `form.html`.
+El proyecto ahora es mínimo: solo servidor y lógica de API.
 
 ---
 
@@ -48,77 +37,47 @@ Se agrega un nuevo template: `form.html`.
 
 Antes:
 
-* El servidor solo renderizaba vistas
-* No recibía datos del usuario
+* El servidor renderizaba vistas HTML
+* Existían templates y archivos estáticos
 
 Ahora:
 
-* Existe un formulario HTML
-* El navegador envía una petición `POST`
-* El servidor procesa datos enviados en el body
-* El contenido renderizado depende del input del usuario
+* El servidor solo expone endpoints bajo `/api/`
+* Las respuestas son JSON
+* No existe capa de presentación
 
-El flujo ahora es bidireccional:
-
-Cliente → Servidor → Respuesta dinámica
+Se produce una separación clara entre backend y frontend.
 
 ---
 
-## 🧩 Flujo completo
+## 🧩 Ejemplo de endpoint
 
-1. El usuario visita `/form`
-2. El servidor responde con el formulario
-3. El usuario envía el formulario
-4. El navegador envía una petición `POST` a `/form`
-5. El servidor ejecuta:
+Un endpoint típico:
 
-```go
-r.ParseForm()
-name := r.FormValue("name")
+```
+GET /api/hello
 ```
 
-6. El servidor vuelve a renderizar la vista mostrando el resultado
+Respuesta:
 
----
-
-## 🔎 Manejo de métodos HTTP
-
-En esta rama se introduce control explícito por método:
-
-```go
-switch r.Method {
-case http.MethodGet:
-case http.MethodPost:
-default:
-}
+```json
+{"message":"Hello from pure JSON API"}
 ```
 
-Esto permite definir comportamientos distintos según el tipo de request.
-
 ---
 
-## 🧠 Qué hace `ParseForm()`
+## 🔎 Conceptos introducidos
 
-`r.ParseForm()` analiza:
-
-* Parámetros en la URL
-* Datos enviados en el body (formularios POST)
-
-Después de ejecutarlo, los valores quedan disponibles para ser leídos.
-
----
-
-## 🧠 Qué hace `FormValue()`
-
-`r.FormValue("name")` devuelve el primer valor asociado a la clave indicada.
-
-Es una forma conveniente de acceder a datos del formulario.
+* Uso de `encoding/json` para serializar structs
+* Uso de struct tags para controlar el formato JSON
+* Manejo explícito de `Content-Type: application/json`
+* Envío de códigos de estado HTTP apropiados
 
 ---
 
 ## 🐳 Ejecución
 
-El servidor sigue escuchando en el puerto 80 dentro del contenedor.
+El servidor escucha en el puerto 80 dentro del contenedor.
 
 En `docker-compose.yml` se mapea:
 
@@ -127,21 +86,24 @@ ports:
   - "8080:80"
 ```
 
-Acceder desde el navegador:
+Probar con:
 
-```
-http://localhost:8080/form
+```bash
+curl http://localhost:8080/api/hello
 ```
 
 ---
 
 ## 📌 Qué estamos aprendiendo realmente
 
-En esta etapa introducimos:
+En esta etapa entendemos que:
 
-* Lectura del body de una petición HTTP
-* Manejo de métodos distintos (GET vs POST)
-* Interacción real entre cliente y servidor
-* Generación de vistas basadas en datos enviados por el usuario
+* Una API es simplemente un conjunto de endpoints HTTP
+* JSON es solo un formato de serialización
+* El backend puede existir sin interfaz gráfica
 
-Este es el momento donde el backend comienza a procesar información, no solo a servir contenido.
+Este es el paso previo antes de modelar recursos y construir una API REST completa.
+
+---
+
+Autor: Curso Backend con Go
