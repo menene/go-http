@@ -15,11 +15,19 @@ type Health struct {
 }
 
 func main() {
+	http.HandleFunc("/api/ping", pingHandler)
 	http.HandleFunc("/api/hello", helloHandler)
-	http.HandleFunc("/api/health", healthHandler)
 
 	log.Println("JSON API running on :80")
 	log.Fatal(http.ListenAndServe(":80", nil))
+}
+
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+	response := Message{
+		Message: "pong",
+	}
+
+	writeJSON(w, http.StatusOK, response)
 }
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {
@@ -30,14 +38,6 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := Message{
 		Message: "Hello from pure JSON API",
-	}
-
-	writeJSON(w, http.StatusOK, response)
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	response := Health{
-		Status: "ok",
 	}
 
 	writeJSON(w, http.StatusOK, response)
