@@ -4,22 +4,40 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 )
+
+type Team struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
 
 type Message struct {
 	Message string `json:"message"`
 }
 
-type Health struct {
-	Status string `json:"status"`
-}
+var teams []Team
 
 func main() {
-	http.HandleFunc("/api/ping", pingHandler)
-	http.HandleFunc("/api/hello", helloHandler)
+	loadTeams()
 
-	log.Println("JSON API running on :80")
+	http.HandleFunc("/api/ping", pingHandler)
+	http.HandleFunc("/api/teams", teamsHandler)
+
+	log.Println("File DB API running on :80")
 	log.Fatal(http.ListenAndServe(":80", nil))
+}
+
+func loadTeams() {
+	file, err := os.ReadFile("./data/teams.json")
+	if err != nil {
+		log.Fatal("Error reading file:", err)
+	}
+
+	err = json.Unmarshal(file, &teams)
+	if err != nil {
+		log.Fatal("Error parsing JSON:", err)
+	}
 }
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {
@@ -30,17 +48,13 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response)
 }
 
-func helloHandler(w http.ResponseWriter, r *http.Request) {
+func teamsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	response := Message{
-		Message: "Hello from pure JSON API",
-	}
-
-	writeJSON(w, http.StatusOK, response)
+	writeJSON(w, http.StatusOK, teams)
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {

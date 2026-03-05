@@ -1,10 +1,8 @@
-# 07 - JSON API
+# 08 - File DB
 
-En esta etapa el servidor deja completamente de renderizar HTML y pasa a ser una **API pura que devuelve JSON**.
+En esta etapa la API deja de devolver datos estáticos definidos en el código y comienza a leer información desde un archivo JSON.
 
-Se elimina cualquier rastro de vistas, templates o archivos estáticos.
-
-El backend ahora actúa como un servicio que expone datos a través de endpoints HTTP.
+Simulamos una base de datos utilizando un archivo local, introduciendo una capa de datos separada de la lógica HTTP.
 
 ---
 
@@ -12,11 +10,11 @@ El backend ahora actúa como un servicio que expone datos a través de endpoints
 
 Comprender:
 
-* Que un backend no necesariamente devuelve HTML
-* Que HTTP es solo el medio de transporte
-* Cómo devolver datos estructurados en formato JSON
-* Cómo usar el paquete estándar `encoding/json`
-* Cómo establecer correctamente headers y códigos de estado
+* Cómo leer archivos en Go usando `os.ReadFile`
+* Cómo deserializar JSON con `json.Unmarshal`
+* Cómo almacenar datos en memoria
+* Cómo separar la capa de datos de la capa HTTP
+* Cómo estructurar una API respaldada por datos persistentes
 
 ---
 
@@ -25,11 +23,13 @@ Comprender:
 ```
 .
 ├── main.go
+├── data/
+│   └── teams.json
 ├── Dockerfile
 └── docker-compose.yml
 ```
 
-El proyecto ahora es mínimo: solo servidor y lógica de API.
+El archivo `teams.json` actúa como una base de datos simple.
 
 ---
 
@@ -37,41 +37,52 @@ El proyecto ahora es mínimo: solo servidor y lógica de API.
 
 Antes:
 
-* El servidor renderizaba vistas HTML
-* Existían templates y archivos estáticos
+* Los datos se definían directamente en el código
+* Las respuestas eran completamente estáticas
 
 Ahora:
 
-* El servidor solo expone endpoints bajo `/api/`
-* Las respuestas son JSON
-* No existe capa de presentación
+* Los datos se cargan desde un archivo externo
+* El servidor mantiene los datos en memoria
+* La API responde usando información leída desde disco
 
-Se produce una separación clara entre backend y frontend.
+Esto introduce una separación clara entre datos y transporte.
 
 ---
 
-## 🧩 Ejemplo de endpoint
+## 🧩 Flujo de datos
 
-Un endpoint típico:
+1. El servidor arranca
+2. Se ejecuta `loadTeams()`
+3. Se lee el archivo `data/teams.json`
+4. Se convierte el JSON en structs de Go
+5. Los endpoints devuelven esos datos
+
+---
+
+## 🔎 Endpoint principal
 
 ```
-GET /api/hello
+GET /api/teams
 ```
 
 Respuesta:
 
 ```json
-{"message":"Hello from pure JSON API"}
+[
+  { "id": 1, "name": "Barcelona" },
+  { "id": 2, "name": "Atlético Madrid" }
+]
 ```
 
 ---
 
-## 🔎 Conceptos introducidos
+## 🧠 Conceptos introducidos
 
-* Uso de `encoding/json` para serializar structs
-* Uso de struct tags para controlar el formato JSON
-* Manejo explícito de `Content-Type: application/json`
-* Envío de códigos de estado HTTP apropiados
+* `os.ReadFile` para leer archivos
+* `json.Unmarshal` para convertir JSON en structs
+* Uso de slices como almacenamiento en memoria
+* Inicialización de datos al iniciar el servidor
 
 ---
 
@@ -89,7 +100,8 @@ ports:
 Probar con:
 
 ```bash
-curl http://localhost:8080/api/hello
+curl http://localhost:8080/api/ping
+curl http://localhost:8080/api/teams
 ```
 
 ---
@@ -98,12 +110,8 @@ curl http://localhost:8080/api/hello
 
 En esta etapa entendemos que:
 
-* Una API es simplemente un conjunto de endpoints HTTP
-* JSON es solo un formato de serialización
-* El backend puede existir sin interfaz gráfica
+* Una API puede estar respaldada por datos externos
+* No siempre se necesita una base de datos real para modelar persistencia
+* La separación entre capa de datos y capa HTTP es fundamental
 
-Este es el paso previo antes de modelar recursos y construir una API REST completa.
-
----
-
-Autor: Curso Backend con Go
+Este es el paso previo antes de introducir filtrado, parámetros y modelado más avanzado de recursos.
