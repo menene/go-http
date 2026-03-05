@@ -89,6 +89,7 @@ ports:
 Probar con:
 
 ```bash
+curl http://localhost:8080/api/ping
 curl http://localhost:8080/api/hello
 ```
 
