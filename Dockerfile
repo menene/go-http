@@ -2,4 +2,10 @@ FROM golang:1.22-alpine
 
 WORKDIR /app
 
-CMD ["go", "run", "main.go"]
+COPY . .
+
+RUN go build -o server main.go
+
+EXPOSE 3012
+
+CMD ["./server"]
