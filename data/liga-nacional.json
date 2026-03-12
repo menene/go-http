@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "name": "Comunicaciones",
+    "deporte": "Futbol",
+    "liga": "Liga Nacional de Guatemala",
+    "sede": "Ciudad de Guatemala",
+    "year": 1949,
+    "titulos": 32
+  },
+  {
+    "id": 2,
+    "name": "Municipal",
+    "deporte": "Futbol",
+    "liga": "Liga Nacional de Guatemala",
+    "sede": "Ciudad de Guatemala",
+    "year": 1936,
+    "titulos": 32
+  },
+  {
+    "id": 3,
+    "name": "Antigua GFC",
+    "deporte": "Futbol",
+    "liga": "Liga Nacional de Guatemala",
+    "sede": "Antigua Guatemala",
+    "year": 1959,
+    "titulos": 6
+  },
+  {
+    "id": 4,
+    "name": "Xelaju MC",
+    "deporte": "Futbol",
+    "liga": "Liga Nacional de Guatemala",
+    "sede": "Quetzaltenango",
+    "year": 1942,
+    "titulos": 7
+  },
+  {
+    "id": 5,
+    "name": "Coban Imperial",
+    "deporte": "Futbol",
+    "liga": "Liga Nacional de Guatemala",
+    "sede": "Coban",
+    "year": 1936,
+    "titulos": 2
+  },
+  {
+    "id": 6,
+    "name": "Malacateco",
+    "deporte": "Futbol",
+    "liga": "Liga Nacional de Guatemala",
+    "sede": "Malacatan",
+    "year": 1962,
+    "titulos": 1
+  },
+  {
+    "id": 7,
+    "name": "Guastatoya",
+    "deporte": "Futbol",
+    "liga": "Liga Nacional de Guatemala",
+    "sede": "Guastatoya",
+    "year": 1945,
+    "titulos": 2
+  },
+  {
+    "id": 8,
+    "name": "Mixco",
+    "deporte": "Futbol",
+    "liga": "Liga Nacional de Guatemala",
+    "sede": "Mixco",
+    "year": 1964,
+    "titulos": 0
+  },
+  {
+    "id": 9,
+    "name": "Achuapa",
+    "deporte": "Futbol",
+    "liga": "Liga Nacional de Guatemala",
+    "sede": "El Progreso",
+    "year": 1990,
+    "titulos": 0
+  },
+  {
+    "id": 10,
+    "name": "Aurora",
+    "deporte": "Futbol",
+    "liga": "Liga Nacional de Guatemala",
+    "sede": "Ciudad de Guatemala",
+    "year": 1945,
+    "titulos": 8
+  }
+]
