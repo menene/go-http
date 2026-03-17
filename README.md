@@ -12,17 +12,19 @@ El objetivo es entender el problema antes de usar la solución.
 
 Comenzamos desde el nivel más bajo posible:
 
-* TCP puro
-* Construcción manual de HTTP
-* Routing manual
-* Uso de la librería estándar
-* Separación de archivos
-* Servir recursos estáticos
-* Generación de vistas
-* Construcción de APIs JSON
-* Persistencia en archivo
-* Manejo de parámetros
-* Creación de recursos
+* TCP puro  
+* Construcción manual de HTTP  
+* Routing manual  
+* Uso de la librería estándar  
+* Separación de archivos  
+* Servir recursos estáticos  
+* Generación de vistas  
+* Construcción de APIs JSON  
+* Persistencia en archivo  
+* Manejo de parámetros  
+* Creación de recursos  
+* Diseño REST  
+* Persistencia con base de datos  
 
 Cada rama representa una capa adicional de abstracción.
 
@@ -34,14 +36,15 @@ La idea es poder moverse entre ramas y observar cómo evoluciona el servidor.
 
 Que el estudiante entienda:
 
-* Qué es realmente HTTP
-* Qué ocurre cuando el navegador hace una petición
-* Qué abstrae `net/http`
-* Cómo funciona el routing
-* Cómo se sirven archivos
-* Cómo se renderizan vistas
-* Cómo se construye una API JSON
-* Cómo se modelan recursos y operaciones
+* Qué es realmente HTTP  
+* Qué ocurre cuando el navegador hace una petición  
+* Qué abstrae `net/http`  
+* Cómo funciona el routing  
+* Cómo se sirven archivos  
+* Cómo se renderizan vistas  
+* Cómo se construye una API JSON  
+* Cómo se modelan recursos y operaciones  
+* Cómo se persisten datos en diferentes capas (memoria, archivo, base de datos)  
 
 ---
 
@@ -84,3 +87,9 @@ Se agregan parámetros en la URL (`?id=`), permitiendo filtrar resultados y modi
 
 **[10-post-json](https://github.com/menene/go-http/tree/10-post-json)**  
 Se incorpora soporte para `POST` con body en formato JSON, permitiendo crear nuevos recursos, validar datos y devolver `201 Created`.
+
+**[11-rest-api](https://github.com/menene/go-http/tree/11-rest-api)**  
+Se introduce un diseño REST completo utilizando rutas basadas en recursos (`/api/teams/1`) y operaciones CRUD sobre los mismos.
+
+**[12-rest-db-api](https://github.com/menene/go-http/tree/12-rest-db-api)**  
+La API se conecta a una base de datos PostgreSQL, reemplazando el almacenamiento en memoria/archivo por persistencia real mediante SQL y Docker Compose.
