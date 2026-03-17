@@ -1,0 +1,180 @@
+{
+  "info": {
+    "name": "Go REST API - Teams",
+    "_postman_id": "go-rest-api-collection",
+    "description": "Pruebas para endpoints REST",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "GET All Teams",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/api/teams",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "teams"]
+        }
+      }
+    },
+    {
+      "name": "GET Team by ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/api/teams/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "teams", "1"]
+        }
+      }
+    },
+    {
+      "name": "GET Team Not Found",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/api/teams/999",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "teams", "999"]
+        }
+      }
+    },
+    {
+      "name": "POST Create Team",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test FC\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/teams",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "teams"]
+        }
+      }
+    },
+    {
+      "name": "POST Invalid Body",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ }"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/teams",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "teams"]
+        }
+      }
+    },
+    {
+      "name": "PUT Update Team",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Updated Team\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/teams/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "teams", "1"]
+        }
+      }
+    },
+    {
+      "name": "PUT Not Found",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Does not exist\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/teams/999",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "teams", "999"]
+        }
+      }
+    },
+    {
+      "name": "DELETE Team",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "http://localhost:8080/api/teams/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "teams", "1"]
+        }
+      }
+    },
+    {
+      "name": "DELETE Not Found",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "http://localhost:8080/api/teams/999",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "teams", "999"]
+        }
+      }
+    },
+    {
+      "name": "PING",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/api/ping",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "ping"]
+        }
+      }
+    }
+  ]
+}

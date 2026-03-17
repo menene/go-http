@@ -1,8 +1,8 @@
-# 10 - POST JSON
+# 11 - REST API
 
-En esta etapa la API incorpora soporte para crear nuevos recursos utilizando el método `POST` con un body en formato JSON.
+En esta etapa se introduce un diseño REST completo utilizando rutas basadas en recursos.
 
-Se mantiene el modelo basado en archivo como fuente inicial de datos, pero ahora el servidor permite modificar el estado en memoria.
+Se deja de utilizar query parameters para acceder a elementos individuales y se adopta el uso de path parameters.
 
 ---
 
@@ -10,11 +10,11 @@ Se mantiene el modelo basado en archivo como fuente inicial de datos, pero ahora
 
 Comprender:
 
-* Cómo leer el body de una petición HTTP
-* Cómo usar `json.NewDecoder` para decodificar JSON
-* Cómo validar datos enviados por el cliente
-* Cómo generar identificadores dinámicamente
-* Cómo devolver `201 Created`
+* Qué significa realmente REST
+* Cómo modelar recursos en una API
+* Cómo utilizar path parameters (`/api/teams/1`)
+* Cómo manejar múltiples métodos HTTP sobre un mismo endpoint
+* Cómo estructurar operaciones CRUD
 
 ---
 
@@ -29,7 +29,7 @@ Comprender:
 └── docker-compose.yml
 ```
 
-La estructura no cambia respecto a la rama anterior.
+La estructura se mantiene igual que en la rama anterior.
 
 ---
 
@@ -37,86 +37,91 @@ La estructura no cambia respecto a la rama anterior.
 
 Antes:
 
-* Solo existían endpoints `GET`
-* Los datos eran únicamente de lectura
+* Se accedía a un recurso usando query parameters (`?id=`)
 
 Ahora:
 
-* `POST /api/teams` permite crear nuevos equipos
-* El servidor decodifica JSON desde el body
-* Se valida el input antes de procesarlo
-* Se devuelve `201 Created` cuando el recurso es creado correctamente
+* Se accede mediante rutas:
+
+```
+GET /api/teams/1
+```
+
+Además:
+
+* Un mismo endpoint maneja múltiples métodos HTTP
+* Se implementan operaciones CRUD completas
 
 ---
 
-## 🧩 Ejemplo de uso
-
-Crear un nuevo equipo:
+## 🧩 Endpoints disponibles
 
 ```
-POST /api/teams
-```
-
-Body (JSON):
-
-```json
-{
-  "name": "Test FC"
-}
-```
-
-Respuesta esperada:
-
-```json
-{
-  "id": 21,
-  "name": "Test FC"
-}
-```
-
-Status:
-
-```
-201 Created
+GET    /api/teams
+GET    /api/teams/1
+POST   /api/teams
+PUT    /api/teams/1
+DELETE /api/teams/1
 ```
 
 ---
 
 ## 🔎 Conceptos introducidos
 
-* `json.NewDecoder(r.Body).Decode(&struct)`
-* Validación básica de campos requeridos
-* Generación automática de ID
-* Mutación de datos en memoria (`append`)
-* Uso correcto de códigos de estado HTTP
+* Path parameters utilizando `strings.Split`
+* Diseño basado en recursos
+* Manejo de múltiples métodos en un mismo handler
+* Eliminación de elementos en slices
+* Actualización de datos en memoria
 
 ---
 
 ## 🐳 Ejecución
 
-El servidor escucha en el puerto 80 dentro del contenedor.
+El servidor continúa utilizando Docker sin cambios.
 
-En `docker-compose.yml` se mapea:
-
-```yaml
-ports:
-  - "8080:80"
-```
-
-Probar con Postman o curl:
+Probar con:
 
 ```bash
-curl -X POST http://localhost:8080/api/teams \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test FC"}'
+curl http://localhost:8080/api/teams
+curl http://localhost:8080/api/teams/1
 ```
+
+---
+
+## 🧪 Pruebas con Postman
+
+Se incluye una colección de Postman en el repositorio para facilitar las pruebas de los endpoints.
+
+Ruta:
+
+```
+postman/collection.json
+```
+
+### Cómo usarla
+
+1. Abrir Postman.
+2. Hacer clic en **Import**.
+3. Seleccionar **Upload Files**.
+4. Elegir el archivo `postman/collection.json`.
+
+Esto cargará automáticamente todos los endpoints listos para probar.
+
+---
+
+### Alternativa
+
+También se pueden crear las peticiones manualmente o utilizar herramientas como:
+
+* [https://hoppscotch.io](https://hoppscotch.io)
 
 ---
 
 ## 📌 Qué estamos aprendiendo realmente
 
-En esta etapa entendemos que:
+En esta etapa se comprende que:
 
-* Las APIs no solo leen datos, también los crean
-* El backend debe validar y procesar el body de las peticiones
-* HTTP define semántica clara para creación de recursos (`POST` + `201`)
+* REST no es una librería, es una forma de diseñar APIs
+* Los recursos se representan mediante rutas
+* Los métodos HTTP definen la acción sobre esos recursos

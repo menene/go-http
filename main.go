@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Team struct {
@@ -22,127 +23,147 @@ var teams []Team
 func main() {
 	loadTeams()
 
-	http.HandleFunc("/api/ping", pingHandler)
 	http.HandleFunc("/api/teams", teamsHandler)
+	http.HandleFunc("/api/teams/", teamByIDHandler)
+	http.HandleFunc("/api/ping", pingHandler)
 
-	log.Println("POST JSON API running on :80")
+	log.Println("REST API running on :80")
 	log.Fatal(http.ListenAndServe(":80", nil))
 }
+
+// ---------- LOAD DATA ----------
 
 func loadTeams() {
 	file, err := os.ReadFile("./data/teams.json")
 	if err != nil {
-		log.Fatal("Error reading file:", err)
+		log.Fatal(err)
 	}
 
 	err = json.Unmarshal(file, &teams)
 	if err != nil {
-		log.Fatal("Error parsing JSON:", err)
+		log.Fatal(err)
 	}
 }
 
-func pingHandler(w http.ResponseWriter, r *http.Request) {
-	response := Message{
-		Message: "pong",
-	}
+// ---------- HANDLERS ----------
 
-	writeJSON(w, http.StatusOK, response)
-}
-
+// /api/teams
 func teamsHandler(w http.ResponseWriter, r *http.Request) {
-
 	switch r.Method {
 
 	case http.MethodGet:
-		handleGetTeams(w, r)
+		writeJSON(w, http.StatusOK, teams)
 
 	case http.MethodPost:
-		handleCreateTeam(w, r)
+		var newTeam Team
+
+		err := json.NewDecoder(r.Body).Decode(&newTeam)
+		if err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		if newTeam.Name == "" {
+			http.Error(w, "Name is required", http.StatusBadRequest)
+			return
+		}
+
+		newTeam.ID = generateNextID()
+		teams = append(teams, newTeam)
+
+		writeJSON(w, http.StatusCreated, newTeam)
 
 	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 	}
 }
 
-func handleGetTeams(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	idParam := query.Get("id")
-
-	if idParam == "" {
-		writeJSON(w, http.StatusOK, teams)
-		return
-	}
-
-	id, err := strconv.Atoi(idParam)
+// /api/teams/{id}
+func teamByIDHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := extractID(r.URL.Path)
 	if err != nil {
-		http.Error(w, "Invalid id parameter", http.StatusBadRequest)
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
-	for _, team := range teams {
-		if team.ID == id {
-			writeJSON(w, http.StatusOK, team)
+	switch r.Method {
+
+	case http.MethodGet:
+		team, found := findTeam(id)
+		if !found {
+			http.Error(w, "Not Found", http.StatusNotFound)
 			return
 		}
-	}
+		writeJSON(w, http.StatusOK, team)
 
-	http.Error(w, "Team not found", http.StatusNotFound)
+	case http.MethodPut:
+		var updated Team
+
+		err := json.NewDecoder(r.Body).Decode(&updated)
+		if err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		for i, t := range teams {
+			if t.ID == id {
+				teams[i].Name = updated.Name
+				writeJSON(w, http.StatusOK, teams[i])
+				return
+			}
+		}
+
+		http.Error(w, "Not Found", http.StatusNotFound)
+
+	case http.MethodDelete:
+		for i, t := range teams {
+			if t.ID == id {
+				teams = append(teams[:i], teams[i+1:]...)
+				writeJSON(w, http.StatusOK, Message{Message: "Deleted"})
+				return
+			}
+		}
+
+		http.Error(w, "Not Found", http.StatusNotFound)
+
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+	}
 }
 
-func handleCreateTeam(w http.ResponseWriter, r *http.Request) {
+// ---------- HELPERS ----------
 
-	var newTeam Team
+func extractID(path string) (int, error) {
+	parts := strings.Split(path, "/")
+	idStr := parts[len(parts)-1]
+	return strconv.Atoi(idStr)
+}
 
-	err := json.NewDecoder(r.Body).Decode(&newTeam)
-	if err != nil {
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
-		return
+func findTeam(id int) (Team, bool) {
+	for _, t := range teams {
+		if t.ID == id {
+			return t, true
+		}
 	}
-
-	if newTeam.Name == "" {
-		http.Error(w, "Name is required", http.StatusBadRequest)
-		return
-	}
-
-	newTeam.ID = generateNextID()
-
-	teams = append(teams, newTeam)
-	// saveTeams()
-
-	writeJSON(w, http.StatusCreated, newTeam)
+	return Team{}, false
 }
 
 func generateNextID() int {
-	maxID := 0
-
-	for _, team := range teams {
-		if team.ID > maxID {
-			maxID = team.ID
+	max := 0
+	for _, t := range teams {
+		if t.ID > max {
+			max = t.ID
 		}
 	}
-
-	return maxID + 1
+	return max + 1
 }
 
-// func saveTeams() {
-// 	data, err := json.MarshalIndent(teams, "", "  ")
-// 	if err != nil {
-// 		log.Println("Error marshaling JSON:", err)
-// 		return
-// 	}
-
-// 	err = os.WriteFile("./data/teams.json", data, 0644)
-// 	if err != nil {
-// 		log.Println("Error writing file:", err)
-// 	}
-// }
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, Message{Message: "pong"})
+}
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-
-	err := json.NewEncoder(w).Encode(payload)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(payload)
 }
