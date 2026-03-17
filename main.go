@@ -1,12 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	_ "github.com/lib/pq"
 )
 
 type Team struct {
@@ -18,28 +21,34 @@ type Message struct {
 	Message string `json:"message"`
 }
 
-var teams []Team
+var db *sql.DB
 
 func main() {
-	loadTeams()
+	connectDB()
 
 	http.HandleFunc("/api/teams", teamsHandler)
 	http.HandleFunc("/api/teams/", teamByIDHandler)
 	http.HandleFunc("/api/ping", pingHandler)
 
-	log.Println("REST API running on :80")
+	log.Println("REST DB API running on :80")
 	log.Fatal(http.ListenAndServe(":80", nil))
 }
 
-// ---------- LOAD DATA ----------
+func connectDB() {
+	connStr := "host=" + os.Getenv("DB_HOST") +
+		" port=" + os.Getenv("DB_PORT") +
+		" user=" + os.Getenv("DB_USER") +
+		" password=" + os.Getenv("DB_PASSWORD") +
+		" dbname=" + os.Getenv("DB_NAME") +
+		" sslmode=disable"
 
-func loadTeams() {
-	file, err := os.ReadFile("./data/teams.json")
+	var err error
+	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = json.Unmarshal(file, &teams)
+	err = db.Ping()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,87 +56,107 @@ func loadTeams() {
 
 // ---------- HANDLERS ----------
 
-// /api/teams
 func teamsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 
 	case http.MethodGet:
-		writeJSON(w, http.StatusOK, teams)
+		rows, err := db.Query("SELECT id, name FROM teams")
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		defer rows.Close()
+
+		var teams []Team
+		for rows.Next() {
+			var t Team
+			rows.Scan(&t.ID, &t.Name)
+			teams = append(teams, t)
+		}
+
+		writeJSON(w, 200, teams)
 
 	case http.MethodPost:
-		var newTeam Team
-
-		err := json.NewDecoder(r.Body).Decode(&newTeam)
+		var t Team
+		err := json.NewDecoder(r.Body).Decode(&t)
 		if err != nil {
-			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			http.Error(w, "Invalid JSON", 400)
 			return
 		}
 
-		if newTeam.Name == "" {
-			http.Error(w, "Name is required", http.StatusBadRequest)
+		if t.Name == "" {
+			http.Error(w, "Name required", 400)
 			return
 		}
 
-		newTeam.ID = generateNextID()
-		teams = append(teams, newTeam)
+		err = db.QueryRow(
+			"INSERT INTO teams(name) VALUES($1) RETURNING id",
+			t.Name,
+		).Scan(&t.ID)
 
-		writeJSON(w, http.StatusCreated, newTeam)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		writeJSON(w, 201, t)
 
 	default:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "Method Not Allowed", 405)
 	}
 }
 
-// /api/teams/{id}
 func teamByIDHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := extractID(r.URL.Path)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		http.Error(w, "Invalid ID", 400)
 		return
 	}
 
 	switch r.Method {
 
 	case http.MethodGet:
-		team, found := findTeam(id)
-		if !found {
-			http.Error(w, "Not Found", http.StatusNotFound)
+		var t Team
+		err := db.QueryRow(
+			"SELECT id, name FROM teams WHERE id=$1",
+			id,
+		).Scan(&t.ID, &t.Name)
+
+		if err == sql.ErrNoRows {
+			http.Error(w, "Not Found", 404)
 			return
 		}
-		writeJSON(w, http.StatusOK, team)
+
+		writeJSON(w, 200, t)
 
 	case http.MethodPut:
-		var updated Team
+		var t Team
+		json.NewDecoder(r.Body).Decode(&t)
 
-		err := json.NewDecoder(r.Body).Decode(&updated)
+		_, err := db.Exec(
+			"UPDATE teams SET name=$1 WHERE id=$2",
+			t.Name, id,
+		)
+
 		if err != nil {
-			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			http.Error(w, err.Error(), 500)
 			return
 		}
 
-		for i, t := range teams {
-			if t.ID == id {
-				teams[i].Name = updated.Name
-				writeJSON(w, http.StatusOK, teams[i])
-				return
-			}
-		}
-
-		http.Error(w, "Not Found", http.StatusNotFound)
+		t.ID = id
+		writeJSON(w, 200, t)
 
 	case http.MethodDelete:
-		for i, t := range teams {
-			if t.ID == id {
-				teams = append(teams[:i], teams[i+1:]...)
-				writeJSON(w, http.StatusOK, Message{Message: "Deleted"})
-				return
-			}
+		_, err := db.Exec("DELETE FROM teams WHERE id=$1", id)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
 		}
 
-		http.Error(w, "Not Found", http.StatusNotFound)
+		writeJSON(w, 200, Message{Message: "Deleted"})
 
 	default:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "Method Not Allowed", 405)
 	}
 }
 
@@ -135,31 +164,11 @@ func teamByIDHandler(w http.ResponseWriter, r *http.Request) {
 
 func extractID(path string) (int, error) {
 	parts := strings.Split(path, "/")
-	idStr := parts[len(parts)-1]
-	return strconv.Atoi(idStr)
-}
-
-func findTeam(id int) (Team, bool) {
-	for _, t := range teams {
-		if t.ID == id {
-			return t, true
-		}
-	}
-	return Team{}, false
-}
-
-func generateNextID() int {
-	max := 0
-	for _, t := range teams {
-		if t.ID > max {
-			max = t.ID
-		}
-	}
-	return max + 1
+	return strconv.Atoi(parts[len(parts)-1])
 }
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, Message{Message: "pong"})
+	writeJSON(w, 200, Message{Message: "pong"})
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {

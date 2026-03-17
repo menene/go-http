@@ -1,8 +1,8 @@
-# 11 - REST API
+# 12 - REST DB API
 
-En esta etapa se introduce un diseño REST completo utilizando rutas basadas en recursos.
+En esta etapa la API deja de utilizar almacenamiento en memoria y pasa a utilizar una base de datos real (PostgreSQL).
 
-Se deja de utilizar query parameters para acceder a elementos individuales y se adopta el uso de path parameters.
+Los datos ahora son persistentes, lo que significa que sobreviven reinicios del servidor.
 
 ---
 
@@ -10,11 +10,11 @@ Se deja de utilizar query parameters para acceder a elementos individuales y se 
 
 Comprender:
 
-* Qué significa realmente REST
-* Cómo modelar recursos en una API
-* Cómo utilizar path parameters (`/api/teams/1`)
-* Cómo manejar múltiples métodos HTTP sobre un mismo endpoint
-* Cómo estructurar operaciones CRUD
+* Cómo conectar una aplicación Go a una base de datos PostgreSQL
+* Cómo ejecutar queries SQL desde Go
+* Cómo mapear resultados de la base de datos a structs
+* Cómo mantener persistencia real de datos
+* Cómo integrar múltiples servicios con Docker Compose
 
 ---
 
@@ -23,13 +23,15 @@ Comprender:
 ```
 .
 ├── main.go
-├── data/
-│   └── teams.json
+├── db/
+│   └── init.sql
+├── docker-compose.yml
 ├── Dockerfile
-└── docker-compose.yml
+└── postman/
+    └── collection.json
 ```
 
-La estructura se mantiene igual que en la rama anterior.
+Se agrega una carpeta `db/` que contiene el script de inicialización de la base de datos.
 
 ---
 
@@ -37,24 +39,31 @@ La estructura se mantiene igual que en la rama anterior.
 
 Antes:
 
-* Se accedía a un recurso usando query parameters (`?id=`)
+* Los datos se almacenaban en memoria
+* Se perdían al reiniciar el servidor
 
 Ahora:
 
-* Se accede mediante rutas:
-
-```
-GET /api/teams/1
-```
-
-Además:
-
-* Un mismo endpoint maneja múltiples métodos HTTP
-* Se implementan operaciones CRUD completas
+* Los datos se almacenan en PostgreSQL
+* Se mantienen entre reinicios
+* La API interactúa con la base de datos usando SQL
 
 ---
 
-## 🧩 Endpoints disponibles
+## 🧩 Base de datos
+
+Se utiliza PostgreSQL ejecutándose en un contenedor Docker.
+
+El archivo `init.sql`:
+
+* Crea la tabla `teams`
+* Inserta datos iniciales (La Liga)
+
+Este script se ejecuta automáticamente al iniciar el contenedor por primera vez.
+
+---
+
+## 🔎 Endpoints disponibles
 
 ```
 GET    /api/teams
@@ -64,57 +73,38 @@ PUT    /api/teams/1
 DELETE /api/teams/1
 ```
 
----
-
-## 🔎 Conceptos introducidos
-
-* Path parameters utilizando `strings.Split`
-* Diseño basado en recursos
-* Manejo de múltiples métodos en un mismo handler
-* Eliminación de elementos en slices
-* Actualización de datos en memoria
+Todos los endpoints funcionan igual que en la rama anterior, pero ahora operan sobre la base de datos.
 
 ---
 
 ## 🐳 Ejecución
 
-El servidor continúa utilizando Docker sin cambios.
-
-Probar con:
+Levantar los servicios con:
 
 ```bash
-curl http://localhost:8080/api/teams
-curl http://localhost:8080/api/teams/1
+docker compose up --build
 ```
+
+Esto iniciará:
+
+* La API en Go
+* PostgreSQL
 
 ---
 
-## 🧪 Pruebas con Postman
+## 🧪 Pruebas
 
-Se incluye una colección de Postman en el repositorio para facilitar las pruebas de los endpoints.
-
-Ruta:
+Se puede utilizar la colección incluida:
 
 ```
 postman/collection.json
 ```
 
-### Cómo usarla
+O probar manualmente:
 
-1. Abrir Postman.
-2. Hacer clic en **Import**.
-3. Seleccionar **Upload Files**.
-4. Elegir el archivo `postman/collection.json`.
-
-Esto cargará automáticamente todos los endpoints listos para probar.
-
----
-
-### Alternativa
-
-También se pueden crear las peticiones manualmente o utilizar herramientas como:
-
-* [https://hoppscotch.io](https://hoppscotch.io)
+```bash
+curl http://localhost:8080/api/teams
+```
 
 ---
 
@@ -122,6 +112,7 @@ También se pueden crear las peticiones manualmente o utilizar herramientas como
 
 En esta etapa se comprende que:
 
-* REST no es una librería, es una forma de diseñar APIs
-* Los recursos se representan mediante rutas
-* Los métodos HTTP definen la acción sobre esos recursos
+* Un backend real necesita persistencia
+* Las bases de datos se integran mediante drivers
+* SQL sigue siendo una parte fundamental del desarrollo backend
+* Docker permite orquestar múltiples servicios fácilmente

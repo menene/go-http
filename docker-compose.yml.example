@@ -1,9 +1,33 @@
+version: "3.9"
 
 services:
-  go-server:
+  app:
     build: .
-    container_name: go-server
+    container_name: go-api
     ports:
       - "8080:80"
     volumes:
       - .:/app
+    working_dir: /app
+    command: go run main.go
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=teamsdb
+
+  db:
+    image: postgres:15
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: teamsdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
