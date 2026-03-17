@@ -108,6 +108,57 @@ curl http://localhost:8080/api/teams
 
 ---
 
+## 🌐 CORS
+
+Al consumir la API desde un frontend que corre en otro puerto (por ejemplo `http://localhost:3000`), el navegador puede bloquear las peticiones debido a la política de seguridad conocida como CORS (Cross-Origin Resource Sharing).
+
+Un *origin* está compuesto por:
+
+```
+protocolo + host + puerto
+```
+
+Por ejemplo:
+
+* `http://localhost:3000`
+* `http://localhost:8080`
+
+Aunque ambos estén en `localhost`, son considerados orígenes distintos.
+
+---
+
+### 🔎 Qué ocurre sin CORS
+
+Si el frontend intenta hacer una petición:
+
+```javascript
+fetch("http://localhost:8080/api/teams")
+```
+
+El navegador puede bloquearla con un error como:
+
+```
+Blocked by CORS policy
+```
+
+Esto sucede aunque el backend esté funcionando correctamente.
+
+---
+
+### ✅ Solución
+
+El backend debe incluir headers que indiquen que permite peticiones desde otros orígenes:
+
+```go
+w.Header().Set("Access-Control-Allow-Origin", "*")
+w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+```
+
+Además, para métodos como `POST`, `PUT` o `DELETE`, el navegador envía una petición previa (`OPTIONS`) que también debe ser manejada.
+
+---
+
 ## 📌 Qué estamos aprendiendo realmente
 
 En esta etapa se comprende que:
@@ -116,3 +167,4 @@ En esta etapa se comprende que:
 * Las bases de datos se integran mediante drivers
 * SQL sigue siendo una parte fundamental del desarrollo backend
 * Docker permite orquestar múltiples servicios fácilmente
+* El frontend y backend requieren configuración adicional para comunicarse (CORS)

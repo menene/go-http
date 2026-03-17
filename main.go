@@ -57,6 +57,12 @@ func connectDB() {
 // ---------- HANDLERS ----------
 
 func teamsHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		return
+	}
+
 	switch r.Method {
 
 	case http.MethodGet:
@@ -107,6 +113,12 @@ func teamsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func teamByIDHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		return
+	}
+
 	id, err := extractID(r.URL.Path)
 	if err != nil {
 		http.Error(w, "Invalid ID", 400)
@@ -160,6 +172,16 @@ func teamByIDHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		return
+	}
+
+	writeJSON(w, 200, Message{Message: "pong"})
+}
+
 // ---------- HELPERS ----------
 
 func extractID(path string) (int, error) {
@@ -167,12 +189,16 @@ func extractID(path string) (int, error) {
 	return strconv.Atoi(parts[len(parts)-1])
 }
 
-func pingHandler(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, 200, Message{Message: "pong"})
-}
-
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(payload)
+}
+
+// ---------- CORS ----------
+
+func enableCORS(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
